@@ -1116,9 +1116,15 @@ png_handle_gAMA(png_struct *png_ptr, png_info *info_ptr, png_uint_32 length)
 
 #ifdef PNG_READ_GAMMA_SUPPORTED
       /* PNGv3: chunk precedence for gamma is cICP, [iCCP], sRGB, gAMA.  gAMA is
-       * at the end of the chain so simply check for an unset value.
+       * at the end of the chain so simply check for an unset value.  A cICP
+       * chunk with an unmanaged transfer characteristic (e.g. PQ) pins the
+       * value at zero on purpose, so don't overwrite that either.
        */
-      if (png_ptr->chunk_gamma == 0)
+      if (png_ptr->chunk_gamma == 0
+#  ifdef PNG_READ_cICP_SUPPORTED
+          && png_ptr->cicp_unmanaged_transfer == 0
+#  endif
+          )
          png_ptr->chunk_gamma = (png_fixed_point)/*SAFE*/ugamma;
 #endif /*READ_GAMMA*/
 
@@ -1254,10 +1260,11 @@ png_handle_cHRM(png_struct *png_ptr, png_info *info_ptr, png_uint_32 length)
 
    /* We only use 'chromaticities' for RGB to gray */
 #  ifdef PNG_READ_RGB_TO_GRAY_SUPPORTED
-      /* There is no need to check sRGB here, cICP is NYI and iCCP is not
-       * supported so just check mDCV.
+      /* PNGv3 precedence for mastering display colour volume is mDCV over
+       * cICP, and cICP over cHRM; only take the cHRM values if neither of
+       * the higher priority chunks is present.
        */
-      if (!png_has_chunk(png_ptr, mDCV))
+      if (!png_has_chunk(png_ptr, mDCV) && !png_has_chunk(png_ptr, cICP))
       {
          png_ptr->chromaticities = xy;
       }
@@ -1300,11 +1307,23 @@ png_handle_sRGB(png_struct *png_ptr, png_info *info_ptr, png_uint_32 length)
     */
 
 #ifdef PNG_READ_GAMMA_SUPPORTED
-      /* PNGv3: chunk precedence for gamma is cICP, [iCCP], sRGB, gAMA.  iCCP is
-       * not supported by libpng so the only requirement is to check for cICP
-       * setting the gamma (this is NYI, but this check is safe.)
+      /* PNGv3: chunk precedence for gamma is cICP, [iCCP], sRGB, gAMA.  iCCP
+       * is not supported by libpng.
+       *
+       * With no cICP chunk sRGB takes precedence over a gAMA chunk, so it sets
+       * the gamma even if gAMA already did.  With a cICP chunk whose transfer
+       * is manageable (e.g. 13) chunk_gamma is already non-zero and cICP wins,
+       * so the value is left alone.  With an unmanageable cICP transfer (e.g.
+       * PQ, code point 16) chunk_gamma is deliberately zero and
+       * cicp_unmanaged_transfer is set; that must keep the value at zero so no
+       * sRGB gamma correction is applied on top of an encoding libpng cannot
+       * decode.
        */
-      if (!png_has_chunk(png_ptr, cICP) || png_ptr->chunk_gamma == 0)
+      if ((!png_has_chunk(png_ptr, cICP) || png_ptr->chunk_gamma == 0)
+#  ifdef PNG_READ_cICP_SUPPORTED
+          && png_ptr->cicp_unmanaged_transfer == 0
+#  endif
+          )
          png_ptr->chunk_gamma = PNG_GAMMA_sRGB_INVERSE;
 #endif /*READ_GAMMA*/
 
@@ -1888,21 +1907,41 @@ png_handle_cICP(png_struct *png_ptr, png_info *info_ptr, png_uint_32 length)
 
    png_set_cICP(png_ptr, info_ptr, buf[0], buf[1],  buf[2], buf[3]);
 
-   /* We only use 'chromaticities' for RGB to gray */
+   /* We only use the cICP data for RGB to gray and for gamma.  The PNGv3
+    * precedence for mastering display colour volume is mDCV over cICP, so
+    * leave the mDCV chromaticities in place if an mDCV chunk was also present.
+    */
 #  ifdef PNG_READ_RGB_TO_GRAY_SUPPORTED
+      /* Record the colour primaries so the rgb to gray precedence can be
+       * resolved later from png_struct without consulting png_info.
+       */
+      png_ptr->cicp_colour_primaries = buf[0];
+
       if (!png_has_chunk(png_ptr, mDCV))
       {
-         /* TODO: png_ptr->chromaticities = chromaticities; */
+         png_xy cicp_xy;
+
+         if (png_cicp_primaries_xy(buf[0], &cicp_xy))
+            png_ptr->chromaticities = cicp_xy;
       }
 #  endif /* READ_RGB_TO_GRAY */
 
 #ifdef PNG_READ_GAMMA_SUPPORTED
       /* PNGv3: chunk precedence for gamma is cICP, [iCCP], sRGB, gAMA.  cICP is
-       * at the head so simply set the gamma if it can be determined.  If not
-       * chunk_gamma remains unchanged; sRGB and gAMA handling check it for
-       * being zero.
+       * at the head so simply set the gamma if it can be determined.  If the
+       * transfer characteristic cannot be managed (e.g. PQ, code point 16)
+       * record that and leave chunk_gamma at zero; the sRGB and gAMA handlers
+       * below then leave it alone, so no sRGB gamma correction is applied to
+       * samples encoded with an unmanaged transfer function.
        */
-      /* TODO: set png_struct::chunk_gamma when possible */
+      {
+         png_fixed_point cicp_gamma = png_cicp_transfer_gamma(buf[1]);
+
+         if (cicp_gamma != 0)
+            png_ptr->chunk_gamma = cicp_gamma;
+         else
+            png_ptr->cicp_unmanaged_transfer = 1;
+      }
 #endif /*READ_GAMMA*/
 
    return handled_ok;

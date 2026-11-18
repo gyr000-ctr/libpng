@@ -1620,12 +1620,22 @@ set_file_encoding(png_image_read_control *display)
    png_fixed_point g = png_resolve_file_gamma(png_ptr);
 
    /* PNGv3: the result may be 0 however the 'default_gamma' should have been
-    * set before this is called so zero is an error:
+    * set before this is called, so zero is an error -- except when a cICP
+    * chunk with an unmanaged transfer characteristic (e.g. PQ) is present:
+    * then zero means the samples must be passed through without a gamma
+    * transform, which is the P_LINEAR8 "no gamma" path below.
     */
    if (g == 0)
-      png_error(png_ptr, "internal: default gamma not set");
+   {
+#  ifdef PNG_READ_cICP_SUPPORTED
+      if (png_ptr->cicp_unmanaged_transfer != 0)
+         display->file_encoding = P_LINEAR8;
+      else
+#  endif
+         png_error(png_ptr, "internal: default gamma not set");
+   }
 
-   if (png_gamma_significant(g) != 0)
+   else if (png_gamma_significant(g) != 0)
    {
       if (png_gamma_not_sRGB(g) != 0)
       {

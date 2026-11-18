@@ -236,6 +236,23 @@ struct png_struct_def
    png_xy          chromaticities; /* From mDVC, cICP, [iCCP], sRGB or cHRM */
 #endif
 
+#if defined(PNG_READ_cICP_SUPPORTED) && \
+    defined(PNG_READ_RGB_TO_GRAY_SUPPORTED)
+   /* The cICP colour primaries code point, recorded here at chunk handling
+    * time so the PNGv3 rgb-to-gray precedence can be resolved at
+    * png_init_read_transformations() time without consulting png_info.
+    */
+   png_byte        cicp_colour_primaries;
+#endif
+
+#ifdef PNG_READ_cICP_SUPPORTED
+   /* Non-zero when a cICP chunk with a transfer characteristic libpng cannot
+    * manage (e.g. PQ) is present; this prevents any gamma correction being
+    * applied from a lower-priority sRGB or gAMA chunk.
+    */
+   png_byte        cicp_unmanaged_transfer;
+#endif
+
 #ifdef PNG_READ_GAMMA_SUPPORTED
    int gamma_shift;      /* number of "insignificant" bits in 16-bit gamma */
    png_fixed_point screen_gamma; /* screen gamma value (display exponent) */

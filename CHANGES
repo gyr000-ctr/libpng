@@ -6400,6 +6400,14 @@ Version 1.6.59 [September 28, 2026]
   Adopted the REUSE Specification for licensing the CI files.
 
 Version 1.8.0 [TODO]
+  Interpreted the cICP chunk during reading instead of only storing it.  The
+  transfer characteristic now drives gamma handling: sRGB (code point 13) uses
+  the same handling as the sRGB chunk, while SMPTE ST 2084/PQ (code point 16)
+  and other unmanaged transfers disable gamma correction so that no sRGB or
+  gAMA gamma is applied on top.  The cICP colour primaries now provide the
+  rgb-to-gray chromaticities, following the PNGv3 chunk precedence rules
+  (cICP over sRGB/gAMA for gamma, mDCV over cICP over cHRM for chromaticities).
+  Files without a cICP chunk decode byte identically to before.
 
 Send comments/corrections/commendations to png-mng-implement at lists.sf.net.
 Subscription is required; visit

@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# cicp_gamma test:
+# cICP transfer characteristics and colour primaries must be decoded into the
+# read state (PQ vs sRGB gamma, cICP-based rgb-to-gray coefficients and the
+# PNGv3 colour chunk precedence rules).
+exec ./cicp_gamma

@@ -1342,7 +1342,18 @@ png_resolve_file_gamma(const png_struct *png_ptr)
     *    png_set_gamma; 1/png_struct::screen_gamma if not zero
     *
     *    0 (i.e. do no gamma handling)
+    *
+    * PNGv3: a cICP chunk with a transfer characteristic libpng cannot manage
+    * (e.g. SMPTE ST 2084/PQ) wins the precedence and means "do not touch the
+    * samples".  Stop here and return 0; falling through to default_gamma or
+    * screen_gamma would re-apply an sRGB style gamma on top of an encoding it
+    * does not understand (the "double gamma" problem).
     */
+#  ifdef PNG_READ_cICP_SUPPORTED
+   if (png_ptr->cicp_unmanaged_transfer != 0)
+      return 0;
+#  endif
+
    file_gamma = png_ptr->file_gamma;
    if (file_gamma != 0)
       return file_gamma;

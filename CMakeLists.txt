@@ -376,6 +376,9 @@ set(pnggetset_sources
 set(pngreadend_sources
     contrib/libtests/pngreadend.c
 )
+set(cicp_gamma_sources
+    contrib/libtests/cicpgamma.c
+)
 set(pngunknown_sources
     contrib/libtests/pngunknown.c
 )
@@ -551,6 +554,17 @@ if(PNG_TESTS AND PNG_SHARED)
                COMMAND pngreadend
                FILES "${CMAKE_CURRENT_SOURCE_DIR}/contrib/testpngs/crashers/stale_zTXt_input.png"
                      "${CMAKE_CURRENT_SOURCE_DIR}/contrib/testpngs/crashers/stale_iCCP_input.png")
+
+  # cicp_gamma test:
+  # cICP transfer characteristics and colour primaries must be decoded into
+  # the read state (PQ vs sRGB gamma, cICP-based rgb-to-gray coefficients and
+  # PNGv3 chunk precedence).
+  add_executable(cicp_gamma ${cicp_gamma_sources})
+  target_link_libraries(cicp_gamma
+                        PRIVATE png_shared)
+
+  png_add_test(NAME cicp_gamma
+               COMMAND cicp_gamma)
 
   # pngvalid tests:
   # Internal validation of standard and progressive reading,

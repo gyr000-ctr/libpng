@@ -1981,6 +1981,25 @@ PNG_INTERNAL_FUNCTION(void, png_build_gamma_table,
    PNG_EMPTY);
 #endif /* READ_GAMMA */
 
+#ifdef PNG_READ_cICP_SUPPORTED
+/* PNGv3 cICP helpers.  png_cicp_transfer_gamma returns the encoding gamma for
+ * a manageable cICP transfer characteristic, or 0 if the transfer cannot be
+ * handled (including SMPTE ST 2084/PQ, code point 16, and all unknown code
+ * points).
+ */
+PNG_INTERNAL_FUNCTION(png_fixed_point, png_cicp_transfer_gamma,
+   (png_byte transfer_function),
+   PNG_EMPTY);
+#  ifdef PNG_READ_RGB_TO_GRAY_SUPPORTED
+/* png_cicp_primaries_xy fills in the chromaticities of a known set of colour
+ * primaries and returns 1, or returns 0 for an unknown set.
+ */
+PNG_INTERNAL_FUNCTION(int, png_cicp_primaries_xy,
+   (png_byte colour_primaries, png_xy *xy),
+   PNG_EMPTY);
+#  endif
+#endif /* READ_cICP */
+
 #ifdef PNG_READ_RGB_TO_GRAY_SUPPORTED
 /* Set the RGB coefficients if not already set by png_set_rgb_to_gray */
 PNG_INTERNAL_FUNCTION(void, png_set_rgb_coefficients,

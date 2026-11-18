@@ -1812,8 +1812,99 @@ png_icc_check_tag_table(const png_struct *png_ptr, const char *name,
 }
 #endif /* READ_iCCP */
 
+#ifdef PNG_READ_cICP_SUPPORTED
+/* Managed cICP transfer characteristics (CICP "transfer characteristics" code
+ * points, ITU-T H.273).  Only the transfer functions libpng can actually
+ * handle are listed here; for anything else png_cicp_transfer_gamma returns 0,
+ * meaning "no gamma can be determined".
+ *
+ * The value returned is the encoding gamma (the inverse exponent) in libpng
+ * fixed point, matching png_struct::chunk_gamma.
+ */
+png_fixed_point /* PRIVATE */
+png_cicp_transfer_gamma(png_byte transfer_function)
+{
+   /* 13: IEC 61966-2-1 sRGB.  libpng does not implement the sRGB transfer
+    * curve itself; it uses the same 1/2.2 approximation it uses for the sRGB
+    * chunk, so return that value.
+    */
+   if (transfer_function == 13)
+      return PNG_GAMMA_sRGB_INVERSE;
+
+   /* 16: SMPTE ST 2084 (PQ).  PQ is a perceptual quantizer with a linear
+    * segment and a power function, not a simple gamma exponent, so libpng's
+    * gamma machinery cannot decode it.  Do not pretend it can: return 0 so
+    * that no sRGB (or gAMA) gamma correction gets applied to PQ encoded
+    * samples and the caller can record that the transfer is unmanaged.
+    */
+   if (transfer_function == 16)
+      return 0;
+
+   return 0; /* Unmanaged or unknown transfer characteristic */
+}
+
+/* Managed cICP colour primaries (CICP "colour primaries" code points,
+ * ITU-T H.273).  The chromaticities are the CIE x,y values scaled by 100,000
+ * as used by the cHRM chunk and png_struct::chromaticities.  Returns 1 and
+ * fills in *xy for a known primary, otherwise returns 0.
+ *
+ * The values come from ITU-R BT.709-6, SMPTE RP 431-2, SMPTE EG 432-1 and
+ * ITU-R BT.2020-2.
+ */
+#if defined(PNG_READ_RGB_TO_GRAY_SUPPORTED)
+int /* PRIVATE */
+png_cicp_primaries_xy(png_byte colour_primaries, png_xy *xy)
+{
+   /*                red x    red y  green x green y blue x  blue y white x
+    *                white y
+    */
+   static const png_xy cicp_primaries[] =
+   {
+      /* 1: BT.709 / sRGB, D65 */
+      { 64000, 33000, 30000, 60000, 15000,  6000, 31270, 32900 },
+      /* 11: BT.2020 / BT.2100, D65 */
+      { 70800, 29200, 17000, 79700, 13100,  4600, 31270, 32900 },
+      /* 12: P3-D65 (SMPTE RP 431-2), D65 */
+      { 68000, 32000, 26500, 69000, 15000,  6000, 31270, 32900 }
+   };
+
+   /* Code point 9 (P3-D60, SMPTE EG 432-1) sits outside the dense range
+    * above, handle it explicitly.
+    */
+   if (colour_primaries == 9)
+   {
+      /* P3-D60: ACES D60 white point */
+      static const png_xy p3_d60 =
+         { 68000, 32000, 26500, 69000, 15000,  6000, 32168, 33767 };
+
+      *xy = p3_d60;
+      return 1;
+   }
+
+   switch (colour_primaries)
+   {
+      case 1:  /* BT.709 / sRGB */
+         *xy = cicp_primaries[0];
+         return 1;
+
+      case 11: /* BT.2020 */
+         *xy = cicp_primaries[1];
+         return 1;
+
+      case 12: /* P3-D65 */
+         *xy = cicp_primaries[2];
+         return 1;
+
+      default:
+         return 0; /* Unmanaged or unknown colour primaries */
+   }
+}
+#endif /* READ_RGB_TO_GRAY */
+#endif /* READ_cICP */
+
 #ifdef PNG_READ_RGB_TO_GRAY_SUPPORTED
-#if (defined PNG_READ_mDCV_SUPPORTED) || (defined PNG_READ_cHRM_SUPPORTED)
+#if (defined PNG_READ_mDCV_SUPPORTED) || (defined PNG_READ_cHRM_SUPPORTED) ||\
+    (defined PNG_READ_cICP_SUPPORTED)
 static int
 have_chromaticities(const png_struct *png_ptr)
 {
@@ -1824,8 +1915,8 @@ have_chromaticities(const png_struct *png_ptr)
     * mDCV: this is the mastering colour space and it is independent of the
     *       encoding so it needs to be used regardless of the encoded space.
     *
-    * cICP: first in priority but not yet implemented - the chromaticities come
-    *       from the 'primaries'.
+    * cICP: first in priority; the chromaticities come from the 'primaries'
+    *       when they are a known, manageable set.
     *
     * iCCP: not supported by libpng (so ignored)
     *
@@ -1838,6 +1929,22 @@ have_chromaticities(const png_struct *png_ptr)
          return 1;
 #     define check_chromaticities 1
 #  endif /*mDCV*/
+
+#  ifdef PNG_READ_cICP_SUPPORTED
+      if (png_has_chunk(png_ptr, cICP))
+      {
+         png_xy xy;
+
+         if (png_cicp_primaries_xy(png_ptr->cicp_colour_primaries, &xy))
+            return 1;
+
+         /* Unknown primaries: fall through to the sRGB default below rather
+          * than to cHRM, because cICP has priority over cHRM.
+          */
+         return 0;
+      }
+#     define check_chromaticities 1
+#  endif /*cICP*/
 
 #  ifdef PNG_READ_sRGB_SUPPORTED
       if (png_has_chunk(png_ptr, sRGB))
@@ -1852,7 +1959,7 @@ have_chromaticities(const png_struct *png_ptr)
 
    return 0; /* sRGB defaults */
 }
-#endif /* READ_mDCV || READ_cHRM */
+#endif /* READ_mDCV || READ_cHRM || READ_cICP */
 
 void /* PRIVATE */
 png_set_rgb_coefficients(png_struct *png_ptr)
