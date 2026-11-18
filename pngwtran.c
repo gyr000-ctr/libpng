@@ -520,6 +520,15 @@ png_do_write_transformations(png_struct *png_ptr, png_row_info *row_info)
              png_ptr->row_buf + 1);      /* start of pixel data for row */
 #endif
 
+#ifdef PNG_WRITE_QUANTIZE_SUPPORTED
+   /* Truecolor to palette must happen first: it consumes the original RGB or
+    * RGBA row and produces one byte per pixel, which PNG_PACK below compacts
+    * in place when the output bit depth is below 8.
+    */
+   if ((png_ptr->transformations & PNG_WRITE_QUANTIZE) != 0)
+      png_do_write_quantize(png_ptr, row_info, png_ptr->row_buf + 1);
+#endif
+
 #ifdef PNG_WRITE_FILLER_SUPPORTED
    if ((png_ptr->transformations & PNG_FILLER) != 0)
       png_do_strip_channel(row_info, png_ptr->row_buf + 1,

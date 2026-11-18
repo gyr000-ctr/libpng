@@ -294,6 +294,25 @@ struct png_struct_def
    png_byte *quantize_index; /* index translation for palette files */
 #endif
 
+#ifdef PNG_WRITE_QUANTIZE_SUPPORTED
+   /* Write-side truecolor-to-palette quantization state.  The palette is
+    * built from the whole image in png_quantize_image(), then each row is
+    * mapped to palette indices by png_do_write_quantize().
+    */
+   png_byte quantize_channels; /* input channels: 3 (RGB) or 4 (RGBA) */
+   png_byte quantize_bit_depth; /* input bit depth: 8 or 16 */
+   png_byte quantize_split_channel; /* channel used by the partition sort */
+   png_uint_32 quantize_width; /* image width; png_ptr->width is 0 pre-IHDR */
+   png_uint_32 quantize_height; /* image height; png_ptr->height is 0 pre-IHDR */
+   png_uint_16 quantize_num_palette; /* number of palette entries */
+   png_color *quantize_palette; /* PLTE entries, quantize_num_palette of them */
+   png_byte *quantize_alpha; /* tRNS entries (0xff beyond num_trans) */
+   png_uint_16 quantize_num_trans; /* number of non-opaque tRNS entries */
+   png_uint_16 *quantize_hist; /* hIST entries, one per palette entry */
+   png_bytepp quantize_rows; /* the whole image supplied by the caller */
+   png_uint_32 *quantize_indices; /* median-cut pixel index work array */
+#endif
+
 /* Options */
    png_uint_32 options;           /* On/off state (up to 16 options) */
 

@@ -356,6 +356,7 @@ set(libpng_sources
     pngtrans.c
     pngwio.c
     pngwrite.c
+    pngwquant.c
     pngwtran.c
     pngwutil.c
     pngsimd.c
@@ -375,6 +376,9 @@ set(pnggetset_sources
 )
 set(pngreadend_sources
     contrib/libtests/pngreadend.c
+)
+set(pngpalwrite_sources
+    contrib/libtests/pngpalwrite.c
 )
 set(pngunknown_sources
     contrib/libtests/pngunknown.c
@@ -551,6 +555,16 @@ if(PNG_TESTS AND PNG_SHARED)
                COMMAND pngreadend
                FILES "${CMAKE_CURRENT_SOURCE_DIR}/contrib/testpngs/crashers/stale_zTXt_input.png"
                      "${CMAKE_CURRENT_SOURCE_DIR}/contrib/testpngs/crashers/stale_iCCP_input.png")
+
+  # pngpalwrite test:
+  # Write-side truecolor-to-palette quantization (PLTE/tRNS/hIST, bit-depth
+  # repacking, determinism, PSNR and alpha fidelity).
+  add_executable(pngpalwrite ${pngpalwrite_sources})
+  target_link_libraries(pngpalwrite
+                        PRIVATE png_shared)
+
+  png_add_test(NAME palette_write
+               COMMAND pngpalwrite)
 
   # pngvalid tests:
   # Internal validation of standard and progressive reading,

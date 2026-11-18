@@ -751,6 +751,24 @@ png_do_write_intrapixel(png_row_info *row_info, png_byte *row)
 }
 #endif /* MNG_FEATURES */
 
+#ifdef PNG_WRITE_QUANTIZE_SUPPORTED
+/* Public entry point: build the palette from the whole image and reconfigure
+ * the write for paletted output.  The actual per-row index mapping happens in
+ * png_do_write_quantize() via the PNG_WRITE_QUANTIZE transformation.
+ */
+void
+png_quantize_image(png_struct *png_ptr, png_info *info_ptr, png_bytepp image,
+    int maximum_colors)
+{
+   png_debug(1, "in png_quantize_image");
+
+   if (png_ptr == NULL || info_ptr == NULL)
+      return;
+
+   png_quantize_build(png_ptr, info_ptr, image, maximum_colors);
+}
+#endif
+
 /* Called by user to write a row of image data */
 void
 png_write_row(png_struct *png_ptr, const png_byte *row)
@@ -1029,6 +1047,19 @@ png_write_destroy(png_struct *png_ptr)
    /* Free the independent copy of the palette owned by png_struct. */
    png_free(png_ptr, png_ptr->palette);
    png_ptr->palette = NULL;
+
+#ifdef PNG_WRITE_QUANTIZE_SUPPORTED
+   /* Free the write-side quantizer state. */
+   png_free(png_ptr, png_ptr->quantize_indices);
+   png_ptr->quantize_indices = NULL;
+   png_free(png_ptr, png_ptr->quantize_palette);
+   png_ptr->quantize_palette = NULL;
+   png_free(png_ptr, png_ptr->quantize_alpha);
+   png_ptr->quantize_alpha = NULL;
+   png_free(png_ptr, png_ptr->quantize_hist);
+   png_ptr->quantize_hist = NULL;
+   png_ptr->quantize_rows = NULL;
+#endif
 
    /* The error handling and memory handling information is left intact at this
     * point: the jmp_buf may still have to be freed.  See png_destroy_png_struct

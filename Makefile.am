@@ -113,7 +113,7 @@ lib_LTLIBRARIES=libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@.la
 # EXTRA_LTLIBRARIES= libpng.la
 libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@_la_SOURCES = png.c pngerror.c\
 	pngget.c pngmem.c pngpread.c pngread.c pngrio.c pngrtran.c pngrutil.c\
-	pngset.c pngtrans.c pngwio.c pngwrite.c pngwtran.c pngwutil.c\
+	pngset.c pngtrans.c pngwio.c pngwrite.c pngwquant.c pngwtran.c pngwutil.c\
 	pngsimd.c\
 	png.h pngconf.h pngdebug.h pnginfo.h pngpriv.h pngstruct.h pngusr.dfa
 

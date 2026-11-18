@@ -455,8 +455,8 @@
 #define PNG_ADD_ALPHA        0x1000000U /* Added to libpng-1.2.7 */
 #define PNG_EXPAND_tRNS      0x2000000U /* Added to libpng-1.2.9 */
 #define PNG_SCALE_16_TO_8    0x4000000U /* Added to libpng-1.5.4 */
-                       /*    0x8000000U unused */
-                       /*   0x10000000U unused */
+#define PNG_WRITE_QUANTIZE   0x8000000U /* Write-side truecolor to palette */
+                       /*    0x10000000U unused */
                        /*   0x20000000U unused */
                        /*   0x40000000U unused */
 /* Flags for png_create_struct */
@@ -1256,6 +1256,33 @@ PNG_INTERNAL_FUNCTION(void, png_write_finish_row,
 PNG_INTERNAL_FUNCTION(void, png_write_start_row,
    (png_struct *png_ptr),
    PNG_EMPTY);
+
+#ifdef PNG_WRITE_QUANTIZE_SUPPORTED
+/* Build a palette of at most maximum_colors entries from the given whole
+ * truecolor (RGB or RGBA, 8-bit or 16-bit) image, reconfigure the write
+ * structures for a paletted output of the minimum legal bit depth, and
+ * populate PLTE/tRNS/hIST in the info structure.  Called from
+ * png_quantize_image() before png_write_info().
+ */
+PNG_INTERNAL_FUNCTION(void, png_quantize_build,
+   (png_struct *png_ptr, png_info *info_ptr, png_bytepp image,
+    int maximum_colors),
+   PNG_EMPTY);
+
+/* Map one row of truecolor pixels to the palette built by png_quantize_build,
+ * producing one byte per pixel.  Called from png_do_write_transformations().
+ */
+PNG_INTERNAL_FUNCTION(void, png_do_write_quantize,
+   (png_struct *png_ptr, png_row_info *row_info, png_byte *row),
+   PNG_EMPTY);
+
+/* Restore the truecolor user row geometry before the first row buffer is
+ * allocated.  Called from png_write_start_row().
+ */
+PNG_INTERNAL_FUNCTION(void, png_quantize_start_row,
+   (png_struct *png_ptr),
+   PNG_EMPTY);
+#endif
 
 /* Combine a row of data, dealing with alpha, etc. if requested.  'row' is an
  * array of png_ptr->width pixels.  If the image is not interlaced or this

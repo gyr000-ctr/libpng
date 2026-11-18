@@ -79,6 +79,8 @@ $   CALL MAKE pngtrans.OBJ "cc ''CCOPT' pngtrans" -
 	pngtrans.c png.h pngconf.h pnglibconf.h pngpriv.h pngstruct.h pnginfo.h pngdebug.h
 $   CALL MAKE pngwrite.OBJ "cc ''CCOPT' pngwrite" -
 	pngwrite.c png.h pngconf.h pnglibconf.h pngpriv.h pngstruct.h pnginfo.h pngdebug.h
+$   CALL MAKE pngwquant.OBJ "cc ''CCOPT' pngwquant" -
+	pngwquant.c png.h pngconf.h pnglibconf.h pngpriv.h pngstruct.h pnginfo.h pngdebug.h
 $   CALL MAKE pngwtran.OBJ "cc ''CCOPT' pngwtran" -
 	pngwtran.c png.h pngconf.h pnglibconf.h pngpriv.h pngstruct.h pnginfo.h pngdebug.h
 $   CALL MAKE pngwutil.OBJ "cc ''CCOPT' pngwutil" -

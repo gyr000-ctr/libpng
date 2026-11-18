@@ -1395,6 +1395,26 @@ PNG_EXPORT(void, png_read_image,
    (png_struct *png_ptr, png_byte **image));
 #endif
 
+#ifdef PNG_WRITE_QUANTIZE_SUPPORTED
+/* Quantize a whole truecolor image to a palette of at most maximum_colors
+ * (clamped to 1..256) and prepare the write structures for a paletted PNG.
+ *
+ * The image must be RGB or RGBA, 8-bit or 16-bit per component, supplied as
+ * the array of row pointers that will subsequently be passed to
+ * png_write_image().  Call this after png_set_IHDR() and the other png_set_*
+ * calls, but before png_write_info(): the function rewrites the IHDR
+ * parameters to PNG_COLOR_TYPE_PALETTE with the minimum legal bit depth and
+ * fills in the PLTE, tRNS (RGBA only) and hIST chunks, all of which are then
+ * written before the first IDAT.  The rows are mapped to palette indices
+ * automatically while the image data is written.
+ *
+ * The quantization is deterministic; it does not modify the caller's image.
+ */
+PNG_EXPORT(void, png_quantize_image,
+   (png_struct *png_ptr, png_info *info_ptr, png_bytepp image,
+    int maximum_colors));
+#endif
+
 /* Write a row of image data */
 PNG_EXPORT(void, png_write_row,
    (png_struct *png_ptr, const png_byte *row));

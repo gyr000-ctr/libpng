@@ -36,7 +36,7 @@ PNGLIBCONF_H_PREBUILT = pnglibconf.h.prebuilt
 
 OBJS = png.o pngerror.o pngget.o pngmem.o pngpread.o pngread.o \
        pngrio.o pngrtran.o pngrutil.o pngset.o pngsimd.o \
-       pngtrans.o pngwio.o pngwrite.o pngwtran.o pngwutil.o
+       pngtrans.o pngwio.o pngwrite.o pngwquant.o pngwtran.o pngwutil.o
 
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $*.c
@@ -106,6 +106,7 @@ pngtrans.o: png.h pngconf.h pnglibconf.h pngpriv.h pngstruct.h pnginfo.h pngdebu
 pngwio.o:   png.h pngconf.h pnglibconf.h pngpriv.h pngstruct.h pnginfo.h pngdebug.h pngtarget.h
 pngwrite.o: png.h pngconf.h pnglibconf.h pngpriv.h pngstruct.h pnginfo.h pngdebug.h pngtarget.h
 pngwtran.o: png.h pngconf.h pnglibconf.h pngpriv.h pngstruct.h pnginfo.h pngdebug.h pngtarget.h
+pngwquant.o: png.h pngconf.h pnglibconf.h pngpriv.h pngstruct.h pnginfo.h pngdebug.h pngtarget.h
 pngwutil.o: png.h pngconf.h pnglibconf.h pngpriv.h pngstruct.h pnginfo.h pngdebug.h pngtarget.h
 
 pngtest.o:  png.h pngconf.h pnglibconf.h

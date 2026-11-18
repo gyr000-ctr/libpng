@@ -2038,6 +2038,13 @@ png_write_start_row(png_struct *png_ptr)
 
    png_debug(1, "in png_write_start_row");
 
+#ifdef PNG_WRITE_QUANTIZE_SUPPORTED
+   /* png_write_IHDR() reset the usr_* fields to the paletted output geometry;
+    * restore the truecolor input geometry before sizing the row buffer.
+    */
+   png_quantize_start_row(png_ptr);
+#endif
+
    usr_pixel_depth = png_ptr->usr_channels * png_ptr->usr_bit_depth;
    buf_size = PNG_ROWBYTES(usr_pixel_depth, png_ptr->width) + 1;
 

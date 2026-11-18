@@ -64,6 +64,7 @@ EXPORTS
  png_write_row
  png_write_rows
  png_write_image
+ png_quantize_image
  png_write_end
  png_read_end
  png_destroy_info_struct
